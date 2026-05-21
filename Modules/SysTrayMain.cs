@@ -7,7 +7,7 @@
 using System;
 using System.Windows.Forms;
 
-namespace QuickLauncher
+namespace QuickLauncher.Modules
 {
    internal static class SysTrayMain
    {

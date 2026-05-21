@@ -11,6 +11,11 @@
    </PropertyGroup>
 
    <ItemGroup>
+     <None Remove="Upload.bat" />
+     <None Remove="Upload.ps1" />
+   </ItemGroup>
+
+   <ItemGroup>
      <Content Include="Res\terminal.ico" />
    </ItemGroup>
 
