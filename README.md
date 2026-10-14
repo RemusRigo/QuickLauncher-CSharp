@@ -30,7 +30,7 @@ See the [User's Guide](UsersGuide.md) for downloads, runtimes, installation and 
 ![C#](https://img.shields.io/badge/Language-C%23-512BD4?labelColor=555555)
 ![VS](https://img.shields.io/badge/IDE-Visual%20Studio-5C2D91?labelColor=555555)
 <br>
-![status](https://img.shields.io/badge/status-in%20progress-orange) 
+![status](https://img.shields.io/badge/status-completed-brightgreen)
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/RemusRigo/QuickLauncher-CSharp/total)
 
 
