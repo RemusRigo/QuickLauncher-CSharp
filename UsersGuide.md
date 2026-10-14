@@ -8,7 +8,10 @@ Download the latest release from the [Releases page](https://github.com/RemusRig
 
 |Folder|Target Framework|Architecture|Required Runtime|
 |-|-|-|-|
-|`net10.0-windows`|.NET 10.0|Any CPU|[.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)|
+|`net8.0 x64`|.NET 8.0|64-bit|[.NET 8.0 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/8.0)|
+|`net8.0 x86`|.NET 8.0|32-bit|[.NET 8.0 Desktop Runtime (x86)](https://dotnet.microsoft.com/download/dotnet/8.0)|
+|`net10.0 x64`|.NET 10.0|64-bit|[.NET 10.0 Desktop Runtime (x64)](https://dotnet.microsoft.com/download/dotnet/10.0)|
+|`net10.0 x86`|.NET 10.0|32-bit|[.NET 10.0 Desktop Runtime (x86)](https://dotnet.microsoft.com/download/dotnet/10.0)|
 
 > The plain ".NET Runtime" is not enough; QuickLauncher needs the **Desktop** Runtime.
 > To check which runtimes are installed, run `dotnet --list-runtimes` and look for a `Microsoft.WindowsDesktop.App 10.x` line.
