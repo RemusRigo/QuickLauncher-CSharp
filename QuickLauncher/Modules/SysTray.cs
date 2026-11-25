@@ -1,18 +1,17 @@
 ﻿//-------------------------------------------------------------------------------------------------
 // QuickLauncher - A system tray application to quickly launch various shell folders and commands.
 //    (C) 2026 Remus Rigo
-//       v1.0.20260319
+//       v1.0.20261125
 //-------------------------------------------------------------------------------------------------
 
 using QuickLauncher.Wnd;
-using System;
-using System.Windows.Forms;
 
 public class SysTray : ApplicationContext
 {
-   private NotifyIcon tray = new NotifyIcon();
-   private ContextMenuStrip mnuLeft = new ContextMenuStrip();
-   private ContextMenuStrip mnuRight = new ContextMenuStrip();
+   // created once here, filled in InitializeTray, disposed in ExitThreadCore
+   private readonly NotifyIcon tray = new NotifyIcon();
+   private readonly ContextMenuStrip mnuLeft = new ContextMenuStrip();
+   private readonly ContextMenuStrip mnuRight = new ContextMenuStrip();
 
    public SysTray()
    {
@@ -23,7 +22,6 @@ public class SysTray : ApplicationContext
    {
 	  //-------------------------------------------------------------------------------------------
 	  // build left click menu
-	  mnuLeft = new ContextMenuStrip();
 	  mnuLeft.Items.Add("Rebuild missing folders", null, (s, e) => AppRebuild());
 	  mnuLeft.Items.Add(new ToolStripSeparator());
 	  mnuLeft.Items.Add("About", null, (s, e) => AppAbout()); 
@@ -31,13 +29,12 @@ public class SysTray : ApplicationContext
 
 	  //-------------------------------------------------------------------------------------------
 	  // build right click menu
-	  mnuRight = new ContextMenuStrip();
 	  var mnuShellCommands = new ToolStripMenuItem("Shell: commands");
 	  var dicShellCommandsCategorized = new Dictionary<string, Dictionary<string, string>>
 	  {
 	     ["Current User"] = new Dictionary<string, string>
 		 {
-		    ["Profile"] = "Shell:Profile",
+		   ["Profile"] = "Shell:Profile",
 			["3D Objects"] = "Shell:3D Objects",
 			["Contacts"] = "Shell:Contacts",
 			["Desktop"] = "Shell:Desktop",
@@ -70,11 +67,11 @@ public class SysTray : ApplicationContext
 			["User ProgramFiles"] = "Shell:UserProgramFiles",
 			["User ProgramFiles Common"] = "Shell:UserProgramFilesCommon",
 			["User Tiles"] = "Shell:UserTiles",
-            ["Users Files Folder"] = "Shell:UsersFilesFolder"
+         ["Users Files Folder"] = "Shell:UsersFilesFolder"
 		 },
 		 ["Current User AppData"] = new Dictionary<string, string>
 		 {
-		    ["AppData"] = "Shell:AppData",
+		   ["AppData"] = "Shell:AppData",
 			["Local AppData"] = "Shell:Local AppData",
 			["Local AppData Low"] = "Shell:LocalAppDataLow",
 			["Account Pictures"] = "Shell:AccountPictures",
@@ -100,7 +97,7 @@ public class SysTray : ApplicationContext
 		 },
 		 ["Public"] = new Dictionary<string, string>
 		 { 
-		    ["Common Desktop"] = "Shell:Common Desktop",
+		   ["Common Desktop"] = "Shell:Common Desktop",
 			["Common Documents"] = "Shell:Common Documents",
 			["Common Downloads"] = "Shell:CommonDownloads",
 			["Common Music"] = "Shell:CommonMusic",
@@ -173,10 +170,10 @@ public class SysTray : ApplicationContext
 		    ["OneDrive Documents"] = "Shell:OneDriveDocuments",
 		    ["OneDrive Music"] = "Shell:neDriveMusic",
 		    ["OneDrive Pictures"] = "Shell:OneDrivePictures",
-		    ["SkyDrive CameraRoll "] = "Shell:SkyDriveCameraRoll",
-		    ["SkyDrive Documents "] = "Shell:SkyDriveDocuments",
-		    ["SkyDrive Music "] = "Shell:SkyDriveMusic",
-		    ["SkyDrive Pictures "] = "Shell:SkyDrivePictures"
+		    ["SkyDrive CameraRoll"] = "Shell:SkyDriveCameraRoll",
+		    ["SkyDrive Documents"] = "Shell:SkyDriveDocuments",
+		    ["SkyDrive Music"] = "Shell:SkyDriveMusic",
+		    ["SkyDrive Pictures"] = "Shell:SkyDrivePictures"
 		 }		 
 	  };
 
@@ -186,7 +183,7 @@ public class SysTray : ApplicationContext
 		 ["HomeGroup Folder"] = "Shell:HomeGroupFolder",
 		 ["Internet Folder"] = "Shell:InternetFolder", // deprecated
 		 ["Localized Resources Dir"] = "Shell:LocalizedResourcesDir",
-		 ["MAPI Folder "] = "Shell:MAPIFolder",
+		 ["MAPI Folder"] = "Shell:MAPIFolder",
 		 ["Recorded TV Library"] = "Shell:RecordedTVLibrary",
 		 ["Retail Demo"] = "Shell:Retail Demo",
 		 ["Roamed Tile Images"] = "Shell:Roamed Tile Images",
@@ -231,30 +228,52 @@ public class SysTray : ApplicationContext
 
 	  //-------------------------------------------------------------------------------------------
 	  // Create tray icon
-	  tray = new NotifyIcon();
 	  tray.Icon = QuickLauncher.Res.Resources.terminal;
 	  tray.Visible = true; 
 	  tray.Text = "Quick Launcher";
 
-	  tray.MouseClick += Tray_MouseClick;
-	  tray.MouseDown += Tray_MouseClick;
-	  tray.MouseUp += Tray_MouseClick;
+	  // right-click: NotifyIcon shows its ContextMenuStrip by itself
+	  // left-click: shown in Tray_MouseUp
+	  tray.ContextMenuStrip = mnuRight;
+	  tray.MouseUp += Tray_MouseUp;
    }
 
-   private void Tray_MouseClick(object? sender, MouseEventArgs e)
-   {
-	  var mi = typeof(NotifyIcon).GetMethod("ShowContextMenu", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+   // NotifyIcon.ShowContextMenu is private: it positions the menu next to the tray and brings it to the foreground
+   // so it closes when clicking elsewhere. Looked up once; Nothing if a future .NET version renames or removes it.
+   private static readonly System.Reflection.MethodInfo? showContextMenu =
+	  typeof(NotifyIcon).GetMethod("ShowContextMenu", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic, null, Type.EmptyTypes, null);
 
-	  if (e.Button == MouseButtons.Left)
+   [System.Runtime.InteropServices.DllImport("user32.dll")]
+   [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.Bool)]
+   private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+   private void Tray_MouseUp(object? sender, MouseEventArgs e)
+   {
+	  if (e.Button != MouseButtons.Left) return;
+
+	  if (showContextMenu != null)
 	  {
-		 tray.ContextMenuStrip = mnuLeft;
-		 mi?.Invoke(tray, null);
+		 try
+		 {
+			// it shows the ContextMenuStrip, so swap in the left menu, then restore the right one
+			tray.ContextMenuStrip = mnuLeft;
+			showContextMenu.Invoke(tray, null);
+			return;
+		 }
+		 catch (System.Reflection.TargetInvocationException)
+		 {
+			// fall through to the public way below
+		 }
+		 finally
+		 {
+			tray.ContextMenuStrip = mnuRight;
+		 }
 	  }
-	  else if (e.Button == MouseButtons.Right)
-	  {
-		 tray.ContextMenuStrip = mnuRight;
-		 mi?.Invoke(tray, null);
-	  }
+
+	  // fallback with public APIs only: bring the menu to the foreground (so a click elsewhere closes it)
+	  // and show it at the mouse; ToolStripDropDown moves it so it stays on screen
+	  SetForegroundWindow(mnuLeft.Handle);
+	  mnuLeft.Show(Cursor.Position);
    }
 
    private void LaunchShellCommands(string cmd)
@@ -268,21 +287,58 @@ public class SysTray : ApplicationContext
 
    private void AppRebuild()
    {
-	   try
-	   {
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%UserProfile%\\3D Objects"));
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%UserProfile%\\Contacts"));
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%UserProfile%\\Music\\Playlists"));
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%UserProfile%\\Pictures\\Camera Roll"));
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%UserProfile%\\Pictures\\Slide Shows"));
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%LocalAppData%\\Microsoft\\Windows\\Burn\\Burn"));
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%LocalAppData%\\Microsoft\\Windows Photo Gallery\\Original Images"));
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%ProgramFiles%\\Windows Sidebar\\Gadgets"));
-			System.IO.Directory.CreateDirectory(Environment.ExpandEnvironmentVariables("%ProgramData%\\OEM Links"));
-	   }
-	   catch
-		{
-		}
+	  string[] folders =
+	  {
+		 @"%UserProfile%\3D Objects",
+		 @"%UserProfile%\Contacts",
+		 @"%UserProfile%\Music\Playlists",
+		 @"%UserProfile%\Pictures\Camera Roll",
+		 @"%UserProfile%\Pictures\Slide Shows",
+		 @"%LocalAppData%\Microsoft\Windows\Burn\Burn",
+		 @"%LocalAppData%\Microsoft\Windows Photo Gallery\Original Images",
+		 @"%ProgramW6432%\Windows Sidebar\Gadgets",   // %ProgramFiles% would be "Program Files (x86)" in the x86 build
+		 @"%ProgramData%\OEM Links"
+	  };
+
+	  var created = new List<string>();
+	  var failed = new List<string>();
+	  int existing = 0;
+
+	  // each folder on its own: one failure (e.g. access denied) must not skip the rest
+	  foreach (string folder in folders)
+	  {
+		 string path = Environment.ExpandEnvironmentVariables(folder);
+		 // 32-bit Windows has no %ProgramW6432%: there %ProgramFiles% is already the right folder
+		 if (path.Contains("%ProgramW6432%"))
+			path = Environment.ExpandEnvironmentVariables(folder.Replace("%ProgramW6432%", "%ProgramFiles%"));
+		 try
+		 {
+			if (System.IO.Directory.Exists(path))
+			{
+			   existing++;
+			   continue;
+			}
+			System.IO.Directory.CreateDirectory(path);
+			created.Add(path);
+		 }
+		 catch (Exception ex)
+		 {
+			failed.Add(path + Environment.NewLine + "      " + ex.Message);
+		 }
+	  }
+
+	  var msg = new System.Text.StringBuilder();
+	  msg.AppendLine($"Already existed: {existing}");
+	  msg.AppendLine($"Created: {created.Count}");
+	  foreach (string path in created) msg.AppendLine("   " + path);
+	  if (failed.Count > 0)
+	  {
+		 msg.AppendLine($"Failed: {failed.Count} (some folders need administrator rights)");
+		 foreach (string f in failed) msg.AppendLine("   " + f);
+	  }
+
+	  MessageBox.Show(msg.ToString(), "Rebuild missing folders", MessageBoxButtons.OK,
+					  failed.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
    }
 
    private void AppAbout()
@@ -298,7 +354,10 @@ public class SysTray : ApplicationContext
    protected override void ExitThreadCore()
    {
 	  tray.Visible = false;
+	  tray.ContextMenuStrip = null;
 	  tray.Dispose();
+	  mnuLeft.Dispose();    // also disposes all its menu items
+	  mnuRight.Dispose();
 	  base.ExitThreadCore();
    }
 }

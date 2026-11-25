@@ -2,15 +2,16 @@
 
 <PropertyGroup>
    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+   <ApplicationIcon>Res\terminal.ico</ApplicationIcon>
    <AssemblyName>QuickLauncher</AssemblyName>
    <ImplicitUsings>enable</ImplicitUsings>
    <Nullable>enable</Nullable>
    <OutputType>WinExe</OutputType>
+   <Platforms>x86;x64</Platforms>
    <!-- <TargetFramework>net10.0-windows</TargetFramework> -->
    <TargetFrameworks>net8.0-windows;net10.0-windows</TargetFrameworks>
+   <TargetFrameworks Condition="'$(BuildingInsideVisualStudio)' == 'true'">net10.0-windows</TargetFrameworks>   <!-- inside Visual Studio use only one framework -->
    <UseWindowsForms>true</UseWindowsForms>
-   <ApplicationIcon>Res\terminal.ico</ApplicationIcon>
-   <Platforms>x86;x64</Platforms>
 </PropertyGroup>
 
    <PropertyGroup Condition="'$(TargetFramework)' != ''">
